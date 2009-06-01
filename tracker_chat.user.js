@@ -11,8 +11,6 @@ var trackerCode = function() {
     Panel.CHAT = "chat";
     
     app.layout.registerPanel(Panel.CHAT, function() { return new ChatWidget(); }, {
-      // storyHomeFunctor: function() {console.log("storyHomeFunctor(",arguments,")");},
-      // openPanelFunctor: function() {console.log("openPanelFunctor(",arguments,")");},
       startSortNumber: 10000
     });
 
