@@ -9,26 +9,30 @@ var code = function() {
   function onAppLoad() {
     Panel.CHAT = "chat";
     
-    app.layout.registerPanel(Panel.CHAT, function() { return new ChatWidget; }, {
+    app.layout.registerPanel(Panel.CHAT, function() { return new ChatWidget(); }, {
       // storyHomeFunctor: function() {console.log("storyHomeFunctor(",arguments,")");},
       // openPanelFunctor: function() {console.log("openPanelFunctor(",arguments,")");},
       startSortNumber: 10000
     });
 
     ChatWidget = Class.create(Widget, {
-      initialize: function(story, readonly, panelTitle) {
-        console.log("ChatWidget.prototype.initialize(",arguments,")");
+      initialize: function() {},
+      getTitle: function() {
+        return "Chat"
       },
-      fillInWidgets: function() {
-        
-      },
+      fillInWidgets: function() {},
       render: function() {
-        return Element.newDiv();
+        this.contents = Element.newDiv("Foo!", {id: "foo"});
+        this.contents.style.backgroundColor = "red";
+        return this.contents;
       },
       needsRenderDelay: function() {
         false;
       },
-      open: function() {}
+      open: function() {},
+      onResize: function(widthPercent, heightPixels) {
+        this.contents.style.height = heightPixels + "px";
+      }
     });
     
     app.layout.openPanel(Panel.CHAT);
