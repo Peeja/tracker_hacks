@@ -39,7 +39,7 @@ var trackerCode = function() {
       }
     });
     
-    app.layout.openPanel(Panel.CHAT);
+    view_menu.insertItem({text: "Chat", onclick: {fn: function() {app.layout.togglePanel(Panel.CHAT)}}}, 5);
   }
   
   (function() {
