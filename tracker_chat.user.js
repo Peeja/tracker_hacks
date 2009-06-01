@@ -22,8 +22,11 @@ var code = function() {
       },
       fillInWidgets: function() {},
       render: function() {
-        this.contents = Element.newDiv("Foo!", {id: "foo"});
-        this.contents.style.backgroundColor = "red";
+        this.contents = Element.create("iframe");
+        this.contents.style.width = "100%";
+        this.contents.style.border = "none";
+        this.contents.src = "http://drop.io/l5j6fwp/chat";
+        
         return this.contents;
       },
       needsRenderDelay: function() {
