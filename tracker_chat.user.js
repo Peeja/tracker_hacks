@@ -2,10 +2,11 @@
 // @name           Tracker Chat
 // @namespace      http://peeja.com/
 // @include        http://www.pivotaltracker.com/projects/*
+// @include        http://drop.io/*
 // ==/UserScript==
 
 
-var code = function() {
+var trackerCode = function() {
   function onAppLoad() {
     Panel.CHAT = "chat";
     
@@ -50,9 +51,44 @@ var code = function() {
   })()
 };
 
+var dropioCode = function() {
+  // Runs whenever we're embedded in another document, which is
+  // probably only when we're embedded in Tracker.  Since we're
+  // not allowed to see the parent's properties (such as its
+  // location), that's probably the best we can do.
+  if (window.parent != window) {
+    $('globalHeaderContainer').hide();
+    $('dropInfo').hide();
+    $('toggleNavigation').hide();
+    $('chatContent').style.marginTop = 0;
+    $('nickList').style.marginTop = 0;
+    $('collapseContainer').style.marginTop = 0;
+    $('nickList').style.minHeight = "100%";
+    $('chatInputContainer').style.bottom = 0;
+    $('chatInputContainer').style.left = 0;
+    $('chatInputContainer').style.right = 0;
+    $('chatInputContainer').style.width = "auto";
+    $('chatInputContainer').style.paddingRight = 0;
+    $("chatButtons").hide()
+    $("chatInputWrapper").style.paddingLeft = 0;
+    $("chatInputWrapper").style.marginRight = 0;
+    $("chatInputWrapper").style.position = "absolute";
+    $("chatInputWrapper").style.width = "auto";
+    $("chatInputWrapper").style.left = "10px";
+    $("chatInputWrapper").style.right = "16px";
+    $("chatInput").style.marginLeft = 0;
+    $("chatInput").style.marginRight = 0;
+    $$(".chatButtonSmall").each(function(button) { button.hide(); });
+  }
+};
+
 // Run code in page context (not priveliged GM context).
 var script = document.createElement("script");
 script.type = "application/javascript";
-script.innerHTML = "(" + code + ")();";
+
+if (/^https?:\/\/(www\.)?pivotaltracker\.com/.test(window.location.href))
+  script.innerHTML = "(" + trackerCode + ")();";
+else if (/^https?:\/\/(www\.)?drop\.io/.test(window.location.href))
+  script.innerHTML = "(" + dropioCode + ")();";
 
 document.body.appendChild(script);
