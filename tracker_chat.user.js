@@ -57,7 +57,7 @@ var dropioCode = function() {
   if (window.parent != window) {
     $('globalHeaderContainer').hide();
     $('dropInfo').hide();
-    $('toggleNavigation').hide();
+    if ($('toggleNavigation')) $('toggleNavigation').hide();
     $('chatContent').style.marginTop = 0;
     $('nickList').style.marginTop = 0;
     $('collapseContainer').style.marginTop = 0;
