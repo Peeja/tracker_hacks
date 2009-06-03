@@ -10,12 +10,21 @@ var trackerCode = function() {
   function onAppLoad() {
     Panel.CHAT = "chat";
     
-    app.layout.registerPanel(Panel.CHAT, function() { return new ChatWidget(); }, {
+    app.layout.registerPanel(Panel.CHAT, function() {
+      var dropName = window.prompt("What drop would you like to chat in?", readCookie("chatDropName") || "");
+      
+      if (dropName == null) return null
+      
+      createCookie("chatDropName", dropName, 365);
+      return new ChatWidget(dropName);
+    },{
       startSortNumber: 10000
     });
 
     ChatWidget = Class.create(Widget, {
-      initialize: function() {},
+      initialize: function(dropName) {
+        this.dropName = dropName;
+      },
       getTitle: function() {
         return "Chat"
       },
@@ -24,7 +33,7 @@ var trackerCode = function() {
         this.contents = Element.create("iframe");
         this.contents.style.width = "100%";
         this.contents.style.border = "none";
-        this.contents.src = "http://drop.io/l5j6fwp/chat";
+        this.contents.src = "http://drop.io/"+this.dropName+"/chat";
         
         return this.contents;
       },
@@ -37,7 +46,7 @@ var trackerCode = function() {
       }
     });
     
-    view_menu.insertItem({text: "Chat", onclick: {fn: function() {app.layout.togglePanel(Panel.CHAT)}}}, 5);
+    view_menu.insertItem({text: "Chat...", onclick: {fn: function() {app.layout.togglePanel(Panel.CHAT);}}}, 5);
   }
   
   (function() {
@@ -47,6 +56,34 @@ var trackerCode = function() {
       setTimeout(arguments.callee, 10);
     }
   })()
+  
+  
+  // Cookies - from http://www.quirksmode.org/js/cookies.html
+  
+  function createCookie(name,value,days) {
+  	if (days) {
+  		var date = new Date();
+  		date.setTime(date.getTime()+(days*24*60*60*1000));
+  		var expires = "; expires="+date.toGMTString();
+  	}
+  	else var expires = "";
+  	document.cookie = name+"="+value+expires+"; path=/";
+  }
+
+  function readCookie(name) {
+  	var nameEQ = name + "=";
+  	var ca = document.cookie.split(';');
+  	for(var i=0;i < ca.length;i++) {
+  		var c = ca[i];
+  		while (c.charAt(0)==' ') c = c.substring(1,c.length);
+  		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+  	}
+  	return null;
+  }
+
+  function eraseCookie(name) {
+  	createCookie(name,"",-1);
+  }
 };
 
 var dropioCode = function() {
