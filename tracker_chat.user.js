@@ -77,6 +77,14 @@ var dropioCode = function() {
     $("chatInput").style.marginLeft = 0;
     $("chatInput").style.marginRight = 0;
     $$(".chatButtonSmall").each(function(button) { button.hide(); });
+    
+    (function() {
+      if (typeof theChatLayer != "undefined")
+        theChatLayer.toggleNickList();
+      else {
+        setTimeout(arguments.callee, 10);
+      }
+    })()
   }
 };
 
