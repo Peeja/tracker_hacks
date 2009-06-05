@@ -121,7 +121,16 @@ var dropioCode = function() {
       else {
         setTimeout(arguments.callee, 10);
       }
-    })()
+    })();
+    
+    document.observe("click", function(e) {
+      var storyRegExp = new RegExp("^http://www.pivotaltracker.com/story/show/(\\d+)$");
+      if (e.target.tagName == "A" && storyRegExp.match(e.target.readAttribute("href"))) {
+        e.stop();
+        var id = storyRegExp.exec(e.target.readAttribute("href"))[1];
+        window.showStoryById(id);
+      };
+    });
   }
 };
 
@@ -131,7 +140,12 @@ script.type = "application/javascript";
 
 if (/^https?:\/\/(www\.)?pivotaltracker\.com/.test(window.location.href))
   script.innerHTML = "(" + trackerCode + ")();";
-else if (/^https?:\/\/(www\.)?drop\.io/.test(window.location.href))
+else if (/^https?:\/\/(www\.)?drop\.io/.test(window.location.href)) {
   script.innerHTML = "(" + dropioCode + ")();";
+  
+  unsafeWindow.showStoryById = function(id) {
+    unsafeWindow.console.log(window.parent.wrappedJSObject.location.href);
+  }
+}
 
 document.body.appendChild(script);
