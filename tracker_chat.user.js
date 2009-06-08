@@ -30,10 +30,12 @@ var trackerCode = function() {
       },
       fillInWidgets: function() {},
       render: function() {
-        this.contents = Element.create("iframe");
+        this.contents = Element.create("iframe", {id: "chat_frame"});
         this.contents.style.width = "100%";
         this.contents.style.border = "none";
         this.contents.src = "http://drop.io/"+this.dropName+"/chat";
+        
+        this.dd = new YAHOO.util.DDTarget(this.contents, "dataGroup");
         
         return this.contents;
       },
@@ -46,6 +48,26 @@ var trackerCode = function() {
       }
     });
     
+    var originalOnDragOver = DraggableItem.prototype.onDragOver;
+    DraggableItem.prototype.onDragOver = function(event, targetHtmlId) {
+      if (targetHtmlId != "chat_frame")
+        return originalOnDragOver.bind(this)(event, targetHtmlId);
+    };
+    
+    var originalOnDragOut = DraggableItem.prototype.onDragOut;
+    DraggableItem.prototype.onDragOut = function(event, targetHtmlId) {
+      if (targetHtmlId != "chat_frame")
+        return originalOnDragOut.bind(this)(event, targetHtmlId);
+    };
+    
+    var originalOnDragDrop = DraggableItem.prototype.onDragDrop;
+    DraggableItem.prototype.onDragDrop = function(event, targetHtmlId) {
+      if (targetHtmlId == "chat_frame")
+        console.log(this.widgetId);
+      else
+        return originalOnDragDrop.bind(this)(event, targetHtmlId);
+    };
+    
     view_menu.insertItem({text: "Chat...", onclick: {fn: function() {app.layout.togglePanel(Panel.CHAT);}}}, 5);
   }
   
@@ -55,7 +77,7 @@ var trackerCode = function() {
     else {
       setTimeout(arguments.callee, 10);
     }
-  })()
+  })();
   
   
   // Receive open-story messages.
