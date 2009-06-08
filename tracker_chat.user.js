@@ -171,12 +171,19 @@ var dropioCode = function() {
     });
     
     insertText = function(text) {
-      if(theChatLayer.chatInputHasDefaultMessage()) {
-        theChatLayer.chatInput.removeClassName('hint').value = text;
-      } else {
-        theChatLayer.chatInput.removeClassName('hint').value = theChatLayer.chatInput.value + text;
-      }
+      if(theChatLayer.chatInputHasDefaultMessage())
+        theChatLayer.chatInput.removeClassName('hint').value = "";
       
+      var start = theChatLayer.chatInput.selectionStart;
+      var end   = theChatLayer.chatInput.selectionEnd;
+      var oldText  = theChatLayer.chatInput.value;
+      var preText  = oldText.substring(0, start);
+      var postText = oldText.substring(end, oldText.length);
+      
+      theChatLayer.chatInput.value = preText + text + postText;
+      
+      theChatLayer.chatInput.selectionStart = start;
+      theChatLayer.chatInput.selectionEnd = start + text.length;
       theChatLayer.chatInput.focus();
     };
     
