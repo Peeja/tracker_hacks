@@ -58,6 +58,15 @@ var trackerCode = function() {
   })()
   
   
+  // Receive open-story messages.
+  Event.observe(window, "message", function(e) {
+    if (e.origin != "http://drop.io") return;
+    
+    if (args = /ShowStory:(\d+)/.exec(e.data))
+      app.showStoryById(args[1]);
+  });
+  
+  
   // Cookies - from http://www.quirksmode.org/js/cookies.html
   
   function createCookie(name,value,days) {
@@ -121,7 +130,18 @@ var dropioCode = function() {
       else {
         setTimeout(arguments.callee, 10);
       }
-    })()
+    })();
+    
+    document.observe("click", function(e) {
+      var storyRegExp = new RegExp("^http://www.pivotaltracker.com/story/show/(\\d+)$");
+      if (e.target.tagName == "A" && storyRegExp.match(e.target.readAttribute("href"))) {
+        e.stop();
+        
+        var id = storyRegExp.exec(e.target.readAttribute("href"))[1];
+        
+        window.parent.postMessage("ShowStory:"+id, "http://www.pivotaltracker.com/");
+      };
+    });
   }
 };
 
