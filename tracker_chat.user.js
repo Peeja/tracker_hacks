@@ -48,6 +48,11 @@ var trackerCode = function() {
       }
     });
     
+    function insertStoryUrlInChat(storyId) {
+      var url = document.location.protocol + '//' + document.location.host + '/story/show/' + storyId;
+      $("chat_frame").contentWindow.postMessage("InsertText:"+url, "http://drop.io");
+    }
+    
     var originalOnDragOver = DraggableItem.prototype.onDragOver;
     DraggableItem.prototype.onDragOver = function(event, targetHtmlId) {
       if (targetHtmlId != "chat_frame")
@@ -63,7 +68,7 @@ var trackerCode = function() {
     var originalOnDragDrop = DraggableItem.prototype.onDragDrop;
     DraggableItem.prototype.onDragDrop = function(event, targetHtmlId) {
       if (targetHtmlId == "chat_frame")
-        console.log(this.widgetId);
+        insertStoryUrlInChat(this.widgetId);
       else
         return originalOnDragDrop.bind(this)(event, targetHtmlId);
     };
@@ -80,7 +85,7 @@ var trackerCode = function() {
   })();
   
   
-  // Receive open-story messages.
+  // Receive ShowStory messages.
   Event.observe(window, "message", function(e) {
     if (e.origin != "http://drop.io") return;
     
@@ -163,6 +168,24 @@ var dropioCode = function() {
         
         window.parent.postMessage("ShowStory:"+id, "http://www.pivotaltracker.com/");
       };
+    });
+    
+    insertText = function(text) {
+      if(theChatLayer.chatInputHasDefaultMessage()) {
+        theChatLayer.chatInput.removeClassName('hint').value = text;
+      } else {
+        theChatLayer.chatInput.removeClassName('hint').value = theChatLayer.chatInput.value + text;
+      }
+      
+      theChatLayer.chatInput.focus();
+    };
+    
+    // Receive InsertText messages.
+    Event.observe(window, "message", function(e) {
+      if (e.origin != "http://www.pivotaltracker.com") return;
+
+      if (args = /InsertText:(.+)/.exec(e.data))
+        insertText(args[1]);
     });
   }
 };
