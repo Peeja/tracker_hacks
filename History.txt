@@ -1,0 +1,5 @@
+=== Git
+
+* Added chat panel, accessible from the view menu.
+* Links clicked in chat which point to Tracker stories show the story.
+* Stories dragged to chat insert their URLs in the chat input.
