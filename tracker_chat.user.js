@@ -36,6 +36,7 @@ var trackerCode = function() {
         this.contents.src = "http://drop.io/"+this.dropName+"/chat";
         
         this.dd = new YAHOO.util.DDTarget(this.contents, "dataGroup");
+        this.dd.addToGroup("activeGroup");
         
         return this.contents;
       },
