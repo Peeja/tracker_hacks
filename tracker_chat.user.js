@@ -9,6 +9,7 @@
 var trackerCode = function() {
   function onAppLoad() {
     Panel.CHAT = "chat";
+    Panel.UNCLONEABLE_PANELS += [Panel.CHAT];
     
     app.layout.registerPanel(Panel.CHAT, function() {
       var dropName = window.prompt("What drop would you like to chat in?", readCookie("chatDropName") || "");
