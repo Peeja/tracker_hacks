@@ -6,15 +6,16 @@
 
 var trackerCode = function() {
   
-}
+};
 
 var settingsCode = function() {
-  function LighthouseSettings(settings) {
-    if (settings)
-      createCookie("lighthouseSettings", $H(settings).toJSON());
+  window.Lighthouse = window.Lighthouse || {}
+  Lighthouse.settings = function(s) {
+    if (s)
+      createCookie("lighthouseSettings", $H(s).toJSON());
     else
-      return $H(readCookie("lighthouseSettings").evalJSON(true));
-  };
+      return readCookie("lighthouseSettings").evalJSON(true);
+  }
   
   $$(".content_section")[2].insert({after: <html><![CDATA[
     <div id="lighthouse_settings" class="content_section">
@@ -36,7 +37,7 @@ var settingsCode = function() {
     </div>
   ]]></html>.toString()});
   
-  LighthouseSettings().each(function(pair) {
+  $H(Lighthouse.settings()).each(function(pair) {
     $("project_"+pair.key).value = pair.value;
   });
   
@@ -48,7 +49,7 @@ var settingsCode = function() {
     
       var settings = this.serialize(true);
       
-      LighthouseSettings($w("lighthouse_account lighthouse_project_id lighthouse_api_token").inject({}, function(h, setting) {
+      $H(Lighthouse.settings($w("lighthouse_account lighthouse_project_id lighthouse_api_token")).inject({}, function(h, setting) {
         h[setting] = settings["project["+setting+"]"];
         return h;
       }));
@@ -87,15 +88,45 @@ var settingsCode = function() {
   function eraseCookie(name) {
   	createCookie(name,"",-1);
   }
+};
+
+// Adds the contents of the given function to the page.
+function insertScript(code) {
+  // Run code in page context (not priveliged GM context).
+  var script = document.createElement("script");
+  script.type = "application/javascript";
+  script.innerHTML = "(" + code + ")();";
+  document.body.appendChild(script);
 }
-
-// Run code in page context (not priveliged GM context).
-var script = document.createElement("script");
-script.type = "application/javascript";
-
 if (/\/projects\/\d+\/settings\/?$/.test(window.location.href))
-  script.innerHTML = "(" + settingsCode + ")();";
+  insertScript(settingsCode);
 else if (/\/projects\/\d+\/?$/.test(window.location.href))
-  script.innerHTML = "(" + trackerCode + ")();";
+  insertScript(trackerCode);
 
-document.body.appendChild(script);
+
+// Add Lighthouse API.
+
+insertScript(function() {
+  String.evalJSON = function(json, sanitize) {
+    return json.evalJSON(sanitize);
+  }
+});
+
+unsafeWindow.Lighthouse = unsafeWindow.Lighthouse || {}
+unsafeWindow.Lighthouse.query = function(query, handler) {
+  var settings = unsafeWindow.Lighthouse.settings();
+  var queryString = unsafeWindow.Object.toQueryString({q: query});
+  
+  setTimeout(GM_xmlhttpRequest, 0, {
+    method: "GET",
+    url: "http://"+settings.lighthouse_account+".lighthouseapp.com/projects/"+settings.lighthouse_project_id+"/tickets?"+queryString,
+    headers: {
+      "User-Agent": navigator.userAgent,
+      "Accept": "application/json",
+      "X-LighthouseToken": settings.lighthouse_api_token
+    },
+    onload: function(response) {
+      handler(unsafeWindow.String.evalJSON(response.responseText, true).tickets);
+    }
+  });
+};
