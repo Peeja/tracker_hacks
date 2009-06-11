@@ -141,9 +141,10 @@ var trackerCode = function() {
         this.ticket = ticket;
       },
       render: function() {
-        this.renderedElement = Element.newDiv('Ticket!', {
+        this.renderedElement = Element.newDiv('', {
             id: this.htmlId()
         });
+        this.renderedElement.appendChild(Element.newDiv(this.ticket.title))
         return this.renderedElement;
       },
       htmlId: function() {
