@@ -66,7 +66,10 @@ insertScript(function() {
   });
   
   Object.extend(Lighthouse.Ticket, {
+    // TODO: This should be a private store with a nice public interface.
+    // For now, it's not.
     _tickets: {},
+    events: new EventChannelRegistry(Lighthouse.Ticket, "update"),
     query: function(query, handler) {
       this._raw_query(query, function(json_tickets) {
         handler(json_tickets.map(function(json_ticket) {
@@ -74,7 +77,9 @@ insertScript(function() {
           Lighthouse.Ticket._tickets[ticket.id()] = ticket;
           return ticket;
         }));
-      });
+        
+        this.events.fire("update");
+      }.bind(this));
     }
   });
 });
@@ -114,6 +119,10 @@ var trackerCode = function() {
     LighthouseWidgetSource = Class.create(AbstractWidgetSource, {
       initialize: function(project) {
         this.super_init(project, "lighthouse");
+        Lighthouse.Ticket.events.subscribe(this, "update");
+      },
+      onUpdate: function() {
+        this.events.fire("update");
       },
       myDomainObjects: function() {
         // TODO: remove this shim.
