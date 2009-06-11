@@ -156,6 +156,16 @@ var trackerCode = function() {
         this.renderedElement.appendChild(Element.newDiv(this.ticket.title))
         return this.renderedElement;
       },
+      fillOutNewStory: function() {
+        app.layout.onClickCreateNewStory();
+        
+        var icebox = app.layout.getFirstPanelForType(Panel.ICEBOX);
+        var newStoryWidget = icebox.viewWidget.getNewStoryWidget();
+        var newStory = $(newStoryWidget.htmlId());
+        
+        newStory.down(".titleInputField").value = this.ticket.title;
+        newStory.down(".notesTextArea").value = "Lighthouse: "+this.ticket.url;
+      },
       htmlId: function() {
         return "ticket_" + this.ticket.id();
       },
