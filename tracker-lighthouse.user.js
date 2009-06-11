@@ -59,20 +59,24 @@ insertScript(function() {
   Lighthouse.Ticket = Class.create({
     initialize: function(json_ticket) {
       Object.extend(this, json_ticket);
-      this._id = this.id;
-      delete this.id;
     },
     id: function() {
-      return this._id;
+      return this.number;
     }
   });
-  Lighthouse.Ticket.query = function(query, handler) {
-    this._raw_query(query, function(json_tickets) {
-      handler(json_tickets.map(function(json_ticket) {
-        return new Lighthouse.Ticket(json_ticket.ticket);
-      }));
-    });
-  }
+  
+  Object.extend(Lighthouse.Ticket, {
+    _tickets: {},
+    query: function(query, handler) {
+      this._raw_query(query, function(json_tickets) {
+        handler(json_tickets.map(function(json_ticket) {
+          var ticket = new Lighthouse.Ticket(json_ticket.ticket);
+          Lighthouse.Ticket._tickets[ticket.id()] = ticket;
+          return ticket;
+        }));
+      });
+    }
+  });
 });
 
 unsafeWindow.Lighthouse.Ticket._raw_query = function(query, handler) {
@@ -99,11 +103,9 @@ var trackerCode = function() {
     Panel.LIGHTHOUSE = "lighthouse";
     Panel.UNCLONEABLE_PANELS += [Panel.LIGHTHOUSE];
     
-    // TODO: Find a better way to store tickets.
-    var tickets = [];
-    
     app.layout.registerPanel(Panel.LIGHTHOUSE, function() {
-      Lighthouse.Ticket.query("", function(ts) {tickets = ts});
+      // Preload some tickets.  TODO: Remove this shim.
+      Lighthouse.Ticket.query("", function() {});
       return new ItemListWidget("Lighthouse", "TODO", new LighthouseWidgetSource(app.project));
     },{
       startSortNumber: 9000
@@ -114,7 +116,16 @@ var trackerCode = function() {
         this.super_init(project, "lighthouse");
       },
       myDomainObjects: function() {
-        return tickets;
+        // TODO: remove this shim.
+        return $H(Lighthouse.Ticket._tickets).values();
+      },
+      createWidgets: function(itemListWidget) {
+        return this.myDomainObjects().map(function(ticket) {
+          return this._createWidget(ticket, itemListWidget);
+        }.bind(this));
+      },
+      createWidgetForId: function(id, itemListWidget) {
+        return this._createWidget(Lighthouse.Ticket._tickets[id], itemListWidget);
       },
       _createWidget: function(ticket, itemListWidget) {
         return new ItemWidget("ticket", new LighthouseTicketWidget(ticket), itemListWidget);
@@ -125,7 +136,22 @@ var trackerCode = function() {
     });
     
     LighthouseTicketWidget = Class.create(Widget, {
-      
+      initialize: function(ticket) {
+        this.super_init("LighthouseTicket", "ticket");
+        this.ticket = ticket;
+      },
+      render: function() {
+        this.renderedElement = Element.newDiv('Ticket!', {
+            id: this.htmlId()
+        });
+        return this.renderedElement;
+      },
+      htmlId: function() {
+        return "ticket_" + this.ticket.id();
+      },
+      id: function() {
+        return this.ticket.id();
+      }
     });
     
     view_menu.insertItem({text: "Lighthouse", onclick: {fn: function() {app.layout.togglePanel(Panel.LIGHTHOUSE);}}}, 5);
