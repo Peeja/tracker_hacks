@@ -4,19 +4,144 @@
 // @include        http://www.pivotaltracker.com/projects/*
 // ==/UserScript==
 
-var trackerCode = function() {
-  
-};
+// Adds the contents of the given function to the page.
+function insertScript(code) {
+  // Run code in page context (not priveliged GM context).
+  var script = document.createElement("script");
+  script.type = "application/javascript";
+  script.innerHTML = "(" + code + ")();";
+  document.body.appendChild(script);
+}
 
-var settingsCode = function() {
-  window.Lighthouse = window.Lighthouse || {}
+
+// Add Lighthouse API.
+
+insertScript(function() {
+  String.evalJSON = function(json, sanitize) {
+    return json.evalJSON(sanitize);
+  };
+  
+  // Cookies - from http://www.quirksmode.org/js/cookies.html
+  
+  function createCookie(name,value,days) {
+  	if (days) {
+  		var date = new Date();
+  		date.setTime(date.getTime()+(days*24*60*60*1000));
+  		var expires = "; expires="+date.toGMTString();
+  	}
+  	else var expires = "";
+  	document.cookie = name+"="+value+expires+"; path=/";
+  }
+
+  function readCookie(name) {
+  	var nameEQ = name + "=";
+  	var ca = document.cookie.split(';');
+  	for(var i=0;i < ca.length;i++) {
+  		var c = ca[i];
+  		while (c.charAt(0)==' ') c = c.substring(1,c.length);
+  		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+  	}
+  	return null;
+  }
+
+  function eraseCookie(name) {
+  	createCookie(name,"",-1);
+  }
+  
+  Lighthouse = window.Lighthouse || {}
   Lighthouse.settings = function(s) {
     if (s)
       createCookie("lighthouseSettings", $H(s).toJSON());
     else
       return readCookie("lighthouseSettings").evalJSON(true);
+  };
+  
+  Lighthouse.Ticket = Class.create({
+    initialize: function(json_ticket) {
+      Object.extend(this, json_ticket);
+      this._id = this.id;
+      delete this.id;
+    },
+    id: function() {
+      return this._id;
+    }
+  });
+  Lighthouse.Ticket.query = function(query, handler) {
+    this._raw_query(query, function(json_tickets) {
+      handler(json_tickets.map(function(json_ticket) {
+        return new Lighthouse.Ticket(json_ticket.ticket);
+      }));
+    });
+  }
+});
+
+unsafeWindow.Lighthouse.Ticket._raw_query = function(query, handler) {
+  var settings = unsafeWindow.Lighthouse.settings();
+  var queryString = unsafeWindow.Object.toQueryString({q: query});
+  
+  setTimeout(GM_xmlhttpRequest, 0, {
+    method: "GET",
+    url: "http://"+settings.lighthouse_account+".lighthouseapp.com/projects/"+settings.lighthouse_project_id+"/tickets?"+queryString,
+    headers: {
+      "User-Agent": navigator.userAgent,
+      "Accept": "application/json",
+      "X-LighthouseToken": settings.lighthouse_api_token
+    },
+    onload: function(response) {
+      handler(unsafeWindow.String.evalJSON(response.responseText, true).tickets);
+    }
+  });
+};
+
+
+var trackerCode = function() {
+  function onAppLoad() {
+    Panel.LIGHTHOUSE = "lighthouse";
+    Panel.UNCLONEABLE_PANELS += [Panel.LIGHTHOUSE];
+    
+    // TODO: Find a better way to store tickets.
+    var tickets = [];
+    
+    app.layout.registerPanel(Panel.LIGHTHOUSE, function() {
+      Lighthouse.Ticket.query("", function(ts) {tickets = ts});
+      return new ItemListWidget("Lighthouse", "TODO", new LighthouseWidgetSource(app.project));
+    },{
+      startSortNumber: 9000
+    });
+    
+    LighthouseWidgetSource = Class.create(AbstractWidgetSource, {
+      initialize: function(project) {
+        this.super_init(project, "lighthouse");
+      },
+      myDomainObjects: function() {
+        return tickets;
+      },
+      _createWidget: function(ticket, itemListWidget) {
+        return new ItemWidget("ticket", new LighthouseTicketWidget(ticket), itemListWidget);
+      },
+      getMyIterations: function() {
+        return [];
+      }
+    });
+    
+    LighthouseTicketWidget = Class.create(Widget, {
+      
+    });
+    
+    view_menu.insertItem({text: "Lighthouse", onclick: {fn: function() {app.layout.togglePanel(Panel.LIGHTHOUSE);}}}, 5);
+    app.layout.togglePanel(Panel.LIGHTHOUSE);
   }
   
+  (function() {
+    if (typeof App != "undefined" && App.isLoaded())
+      onAppLoad();
+    else {
+      setTimeout(arguments.callee, 10);
+    }
+  })();
+};
+
+var settingsCode = function() {
   $$(".content_section")[2].insert({after: <html><![CDATA[
     <div id="lighthouse_settings" class="content_section">
       <h2>Lighthouse</h2>
@@ -59,74 +184,10 @@ var settingsCode = function() {
       this.submit();
     }
   });
-  
-  
-  
-  // Cookies - from http://www.quirksmode.org/js/cookies.html
-  
-  function createCookie(name,value,days) {
-  	if (days) {
-  		var date = new Date();
-  		date.setTime(date.getTime()+(days*24*60*60*1000));
-  		var expires = "; expires="+date.toGMTString();
-  	}
-  	else var expires = "";
-  	document.cookie = name+"="+value+expires+"; path=/";
-  }
-
-  function readCookie(name) {
-  	var nameEQ = name + "=";
-  	var ca = document.cookie.split(';');
-  	for(var i=0;i < ca.length;i++) {
-  		var c = ca[i];
-  		while (c.charAt(0)==' ') c = c.substring(1,c.length);
-  		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
-  	}
-  	return null;
-  }
-
-  function eraseCookie(name) {
-  	createCookie(name,"",-1);
-  }
 };
 
-// Adds the contents of the given function to the page.
-function insertScript(code) {
-  // Run code in page context (not priveliged GM context).
-  var script = document.createElement("script");
-  script.type = "application/javascript";
-  script.innerHTML = "(" + code + ")();";
-  document.body.appendChild(script);
-}
-if (/\/projects\/\d+\/settings\/?$/.test(window.location.href))
+if (/\/projects\/\d+\/settings\/?$/.test(window.location.pathname))
   insertScript(settingsCode);
-else if (/\/projects\/\d+\/?$/.test(window.location.href))
+else if (/\/projects\/\d+\/?$/.test(window.location.pathname))
   insertScript(trackerCode);
 
-
-// Add Lighthouse API.
-
-insertScript(function() {
-  String.evalJSON = function(json, sanitize) {
-    return json.evalJSON(sanitize);
-  }
-});
-
-unsafeWindow.Lighthouse = unsafeWindow.Lighthouse || {}
-unsafeWindow.Lighthouse.query = function(query, handler) {
-  var settings = unsafeWindow.Lighthouse.settings();
-  var queryString = unsafeWindow.Object.toQueryString({q: query});
-  
-  setTimeout(GM_xmlhttpRequest, 0, {
-    method: "GET",
-    url: "http://"+settings.lighthouse_account+".lighthouseapp.com/projects/"+settings.lighthouse_project_id+"/tickets?"+queryString,
-    headers: {
-      "User-Agent": navigator.userAgent,
-      "Accept": "application/json",
-      "X-LighthouseToken": settings.lighthouse_api_token
-    },
-    onload: function(response) {
-      handler(unsafeWindow.String.evalJSON(response.responseText, true).tickets);
-    }
-  });
-};
