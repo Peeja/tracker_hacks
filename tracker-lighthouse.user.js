@@ -105,19 +105,11 @@ var trackerCode = function() {
     });
     
     Object.extend(Lighthouse.Ticket, {
-      // TODO: This should be a private store with a nice public interface.
-      // For now, it's not.
-      _tickets: {},
-      events: new EventChannelRegistry(Lighthouse.Ticket, "update"),
       query: function(query, handler) {
         window.queryLighthouse(query, function(json_tickets) {
           handler(json_tickets.map(function(json_ticket) {
-            var ticket = new Lighthouse.Ticket(json_ticket.ticket);
-            Lighthouse.Ticket._tickets[ticket.id()] = ticket;
-            return ticket;
+            return new Lighthouse.Ticket(json_ticket.ticket);
           }));
-        
-          this.events.fire("update");
         }.bind(this));
       }
     });
@@ -125,14 +117,18 @@ var trackerCode = function() {
     LighthouseWidgetSource = Class.create(AbstractWidgetSource, {
       initialize: function(project) {
         this.super_init(project, "lighthouse");
-        Lighthouse.Ticket.events.subscribe(this, "update");
-      },
-      onUpdate: function() {
-        this.events.fire("update");
+        
+        this._ticketsById = new Hash();
+        Lighthouse.Ticket.query("", function(ts) {
+          this._ticketsById = ts.inject(new Hash(), function(h, t) {
+            h.set(t.id(), t);
+            return h;
+          });
+          this.events.fire("update");
+        }.bind(this))
       },
       myDomainObjects: function() {
-        // TODO: remove this shim.
-        return $H(Lighthouse.Ticket._tickets).values();
+        return this._ticketsById.values();
       },
       createWidgets: function(itemListWidget) {
         return this.myDomainObjects().map(function(ticket) {
@@ -140,7 +136,7 @@ var trackerCode = function() {
         }.bind(this));
       },
       createWidgetForId: function(id, itemListWidget) {
-        return this._createWidget(Lighthouse.Ticket._tickets[id], itemListWidget);
+        return this._createWidget(this._ticketsById.get(id), itemListWidget);
       },
       _createWidget: function(ticket, itemListWidget) {
         return new ItemWidget("ticket", new LighthouseTicketWidget(ticket), itemListWidget);
