@@ -56,6 +56,33 @@ insertScript(function() {
 });
 
 var trackerCode = function() {
+  var stylesheet = document.createElement('style');
+  stylesheet.type = 'text/css';
+  stylesheet.rel = 'stylesheet';
+  stylesheet.media = 'screen';
+  
+  stylesheet.innerHTML = <css><![CDATA[
+    .addStoryButton {
+      float: right;
+      padding: 2px 4px;
+      margin: 5px;
+      background: blue;
+      color: white;
+    }
+    
+    #lighthouse_itemList_items .item {
+      clear: both;
+    }
+    
+    .lighthouseTicket_title {
+      padding-top: 7px;
+      margin-left: 10px;
+    }
+  ]]></css>.toString()
+  
+  document.getElementsByTagName("head")[0].appendChild(stylesheet);
+  
+  
   function onAppLoad() {
     Panel.LIGHTHOUSE = "lighthouse";
     Panel.UNCLONEABLE_PANELS += [Panel.LIGHTHOUSE];
@@ -130,9 +157,17 @@ var trackerCode = function() {
       },
       render: function() {
         this.renderedElement = Element.newDiv('', {
-            id: this.htmlId()
+            id: this.htmlId(),
+            className: 'lighthouseTicket'
         });
-        this.renderedElement.appendChild(Element.newDiv(this.ticket.title))
+        
+        var addStoryButton = Element.newDiv('Add Story', {className: 'addStoryButton'})
+        var ticketWidget = this;
+        addStoryButton.observe('click', function() { ticketWidget.fillOutNewStory() });
+        this.renderedElement.appendChild(addStoryButton);
+        
+        this.renderedElement.appendChild(Element.newDiv(this.ticket.title, {className: 'lighthouseTicket_title'}));
+        
         return this.renderedElement;
       },
       fillOutNewStory: function() {
