@@ -14,8 +14,6 @@ function insertScript(code) {
 }
 
 
-// Add Lighthouse API.
-
 insertScript(function() {
   String.evalJSON = function(json, sanitize) {
     return json.evalJSON(sanitize);
@@ -53,55 +51,9 @@ insertScript(function() {
     if (s)
       createCookie("lighthouseSettings", $H(s).toJSON());
     else
-      return readCookie("lighthouseSettings").evalJSON(true);
+      return (readCookie("lighthouseSettings") || "{}").evalJSON(true);
   };
-  
-  Lighthouse.Ticket = Class.create({
-    initialize: function(json_ticket) {
-      Object.extend(this, json_ticket);
-    },
-    id: function() {
-      return this.number;
-    }
-  });
-  
-  Object.extend(Lighthouse.Ticket, {
-    // TODO: This should be a private store with a nice public interface.
-    // For now, it's not.
-    _tickets: {},
-    events: new EventChannelRegistry(Lighthouse.Ticket, "update"),
-    query: function(query, handler) {
-      this._raw_query(query, function(json_tickets) {
-        handler(json_tickets.map(function(json_ticket) {
-          var ticket = new Lighthouse.Ticket(json_ticket.ticket);
-          Lighthouse.Ticket._tickets[ticket.id()] = ticket;
-          return ticket;
-        }));
-        
-        this.events.fire("update");
-      }.bind(this));
-    }
-  });
 });
-
-unsafeWindow.Lighthouse.Ticket._raw_query = function(query, handler) {
-  var settings = unsafeWindow.Lighthouse.settings();
-  var queryString = unsafeWindow.Object.toQueryString({q: query});
-  
-  setTimeout(GM_xmlhttpRequest, 0, {
-    method: "GET",
-    url: "http://"+settings.lighthouse_account+".lighthouseapp.com/projects/"+settings.lighthouse_project_id+"/tickets?"+queryString,
-    headers: {
-      "User-Agent": navigator.userAgent,
-      "Accept": "application/json",
-      "X-LighthouseToken": settings.lighthouse_api_token
-    },
-    onload: function(response) {
-      handler(unsafeWindow.String.evalJSON(response.responseText, true).tickets);
-    }
-  });
-};
-
 
 var trackerCode = function() {
   function onAppLoad() {
@@ -114,6 +66,33 @@ var trackerCode = function() {
       return new ItemListWidget("Lighthouse", "TODO", new LighthouseWidgetSource(app.project));
     },{
       startSortNumber: 9000
+    });
+    
+    Lighthouse.Ticket = Class.create({
+      initialize: function(json_ticket) {
+        Object.extend(this, json_ticket);
+      },
+      id: function() {
+        return this.number;
+      }
+    });
+    
+    Object.extend(Lighthouse.Ticket, {
+      // TODO: This should be a private store with a nice public interface.
+      // For now, it's not.
+      _tickets: {},
+      events: new EventChannelRegistry(Lighthouse.Ticket, "update"),
+      query: function(query, handler) {
+        window.queryLighthouse(query, function(json_tickets) {
+          handler(json_tickets.map(function(json_ticket) {
+            var ticket = new Lighthouse.Ticket(json_ticket.ticket);
+            Lighthouse.Ticket._tickets[ticket.id()] = ticket;
+            return ticket;
+          }));
+        
+          this.events.fire("update");
+        }.bind(this));
+      }
     });
     
     LighthouseWidgetSource = Class.create(AbstractWidgetSource, {
@@ -220,7 +199,7 @@ var settingsCode = function() {
     
       var settings = this.serialize(true);
       
-      $H(Lighthouse.settings($w("lighthouse_account lighthouse_project_id lighthouse_api_token")).inject({}, function(h, setting) {
+      Lighthouse.settings($w("lighthouse_account lighthouse_project_id lighthouse_api_token").inject({}, function(h, setting) {
         h[setting] = settings["project["+setting+"]"];
         return h;
       }));
@@ -231,6 +210,25 @@ var settingsCode = function() {
     }
   });
 };
+
+unsafeWindow.queryLighthouse = function(query, handler) {
+  var settings = unsafeWindow.Lighthouse.settings();
+  var queryString = unsafeWindow.Object.toQueryString({q: query});
+  
+  setTimeout(GM_xmlhttpRequest, 0, {
+    method: "GET",
+    url: "http://"+settings.lighthouse_account+".lighthouseapp.com/projects/"+settings.lighthouse_project_id+"/tickets?"+queryString,
+    headers: {
+      "User-Agent": navigator.userAgent,
+      "Accept": "application/json",
+      "X-LighthouseToken": settings.lighthouse_api_token
+    },
+    onload: function(response) {
+      handler(unsafeWindow.String.evalJSON(response.responseText, true).tickets);
+    }
+  });
+};
+
 
 if (/\/projects\/\d+\/settings\/?$/.test(window.location.pathname))
   insertScript(settingsCode);
