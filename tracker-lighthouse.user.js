@@ -117,9 +117,11 @@ var trackerCode = function() {
     LighthouseWidgetSource = Class.create(AbstractWidgetSource, {
       initialize: function(project) {
         this.super_init(project, "lighthouse");
-        
         this._ticketsById = new Hash();
-        Lighthouse.Ticket.query("", function(ts) {
+        this.query("");
+      },
+      query: function(q) {
+        Lighthouse.Ticket.query(q, function(ts) {
           this._ticketsById = ts.inject(new Hash(), function(h, t) {
             h.set(t.id(), t);
             return h;
