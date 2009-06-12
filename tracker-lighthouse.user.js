@@ -189,7 +189,6 @@ var trackerCode = function() {
     });
     
     view_menu.insertItem({text: "Lighthouse", onclick: {fn: function() {app.layout.togglePanel(Panel.LIGHTHOUSE);}}}, 5);
-    app.layout.togglePanel(Panel.LIGHTHOUSE);
   }
   
   (function() {
