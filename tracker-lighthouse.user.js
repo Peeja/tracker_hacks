@@ -90,7 +90,7 @@ var trackerCode = function() {
     app.layout.registerPanel(Panel.LIGHTHOUSE, function() {
       // Preload some tickets.  TODO: Remove this shim.
       Lighthouse.Ticket.query("", function() {});
-      return new ItemListWidget("Lighthouse", "TODO", new LighthouseWidgetSource(app.project));
+      return new LighthouseWidget(app.project);
     },{
       startSortNumber: 9000
     });
@@ -114,13 +114,40 @@ var trackerCode = function() {
       }
     });
     
+    LighthouseWidget = Class.create(Widget, {
+      initialize: function(project) {
+        this.super_init("Lighthouse", "lighthouse");
+        this.widgetSource = new LighthouseWidgetSource(project);
+        this.itemListWidget = new ItemListWidget(this.getTitle(), this.getDescription(), this.widgetSource);
+      },
+      getTitle: function() {
+        return "Lighthouse";
+      },
+      getDescription: function() {
+        return "TODO";
+      },
+      render: function() {
+        this.renderedElement = new Element.newDiv('', {
+          id: this.htmlId(),
+          className: 'search'
+        });
+        this.renderedElement.appendChild(this.itemListWidget.render());
+        return this.renderedElement;
+      },
+      needsRenderDelay: function() {
+        false
+      },
+      fillInWidgets: function() {},
+      open: function() {}
+    });
+    
     LighthouseWidgetSource = Class.create(AbstractWidgetSource, {
       initialize: function(project) {
         this.super_init(project, "lighthouse");
         this._ticketsById = new Hash();
-        this.query("");
+        this.search("");
       },
-      query: function(q) {
+      search: function(q) {
         Lighthouse.Ticket.query(q, function(ts) {
           this._ticketsById = ts.inject(new Hash(), function(h, t) {
             h.set(t.id(), t);
@@ -187,6 +214,7 @@ var trackerCode = function() {
     });
     
     view_menu.insertItem({text: "Lighthouse", onclick: {fn: function() {app.layout.togglePanel(Panel.LIGHTHOUSE);}}}, 5);
+    app.layout.togglePanel(Panel.LIGHTHOUSE);
   }
   
   (function() {
